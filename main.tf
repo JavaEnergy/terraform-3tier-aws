@@ -71,11 +71,11 @@ module "rds_primary" {
   source    = "./modules/rds"
   providers = { aws = aws.primary }
 
-  project_name          = var.project_name
-  environment           = var.environment
-  region_label          = "primary"
-  vpc_id                = module.vpc_primary.vpc_id
-  subnet_ids            = module.vpc_primary.rds_subnet_ids
+  project_name     = var.project_name
+  environment      = var.environment
+  region_label     = "primary"
+  vpc_id           = module.vpc_primary.vpc_id
+  subnet_ids       = module.vpc_primary.rds_subnet_ids
   ecs_subnet_cidrs = var.primary_ecs_subnets
   db_name          = var.db_name
   db_username      = var.db_username
@@ -199,11 +199,11 @@ module "rds_secondary" {
   source    = "./modules/rds"
   providers = { aws = aws.secondary }
 
-  project_name          = var.project_name
-  environment           = var.environment
-  region_label          = "secondary"
-  vpc_id                = module.vpc_secondary.vpc_id
-  subnet_ids            = module.vpc_secondary.rds_subnet_ids
+  project_name     = var.project_name
+  environment      = var.environment
+  region_label     = "secondary"
+  vpc_id           = module.vpc_secondary.vpc_id
+  subnet_ids       = module.vpc_secondary.rds_subnet_ids
   ecs_subnet_cidrs = var.secondary_ecs_subnets
   db_name          = var.db_name
   db_username      = var.db_username

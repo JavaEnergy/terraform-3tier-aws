@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2-Region 3-Tier AWS Infrastructure</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 28px;
+  }
+
+  /* ── TIER LABELS ───────────────────────────────────────────── */
+  .tiers-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 1380px;
+    margin: 0 auto;
+  }
+  .tier-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+  .tier-label {
+    width: 88px;
+    min-width: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border-radius: 10px;
+    margin: 8px 0;
+    padding: 12px 4px;
+  }
+  .tier-label.t1 { background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; }
+  .tier-label.t2 { background: #1e293b; color: #a78bfa; border: 1px solid #a78bfa; }
+  .tier-label.t3 { background: #1e293b; color: #fb923c; border: 1px solid #fb923c; }
+
+  .tier-content {
+    flex: 1;
+    display: flex;
+    gap: 16px;
+    padding: 8px;
+  }
+
+  /* ── REGION BOXES ──────────────────────────────────────────── */
+  .region {
+    flex: 1;
+    border-radius: 14px;
+    padding: 16px;
+    position: relative;
+  }
+  .region.primary   { background: #111827; border: 2px solid #1e40af; }
+  .region.secondary { background: #111827; border: 2px solid #065f46; }
+  .region-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .region.primary   .region-title { color: #60a5fa; }
+  .region.secondary .region-title { color: #34d399; }
+  .region-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 600;
+  }
+  .region.primary   .region-badge { background: #1e3a8a; color: #93c5fd; }
+  .region.secondary .region-badge { background: #064e3b; color: #6ee7b7; }
+
+  /* ── SUBNETS ───────────────────────────────────────────────── */
+  .subnet {
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .subnet:last-child { margin-bottom: 0; }
+  .subnet.public  { background: rgba(20,83,45,0.25); border: 1.5px dashed #22c55e; }
+  .subnet.private-ecs { background: rgba(30,58,138,0.25); border: 1.5px dashed #3b82f6; }
+  .subnet.private-rds { background: rgba(120,53,15,0.25); border: 1.5px dashed #f97316; }
+  .subnet-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+    opacity: 0.8;
+  }
+  .subnet.public .subnet-label      { color: #4ade80; }
+  .subnet.private-ecs .subnet-label { color: #60a5fa; }
+  .subnet.private-rds .subnet-label { color: #fb923c; }
+
+  /* ── SERVICE CARDS ─────────────────────────────────────────── */
+  .services-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .svc {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    min-width: 78px;
+    cursor: default;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .svc:hover { transform: translateY(-2px); border-color: #FF9900; }
+  .svc-icon { font-size: 22px; line-height: 1; }
+  .svc-name {
+    font-size: 10px;
+    font-weight: 600;
+    color: #cbd5e1;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .svc-sub {
+    font-size: 9px;
+    color: #64748b;
+    text-align: center;
+    line-height: 1.2;
+  }
+  /* color accents */
+  .svc.aws   { border-color: #92400e; }
+  .svc.orange { border-color: #c2410c; }
+
+  /* ── ARROWS ────────────────────────────────────────────────── */
+  .arrow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 6px 0;
+  }
+  .arrow-line {
+    height: 2px;
+    flex: 1;
+    max-width: 48px;
+    background: linear-gradient(to right, #334155, #64748b);
+    border-radius: 1px;
+  }
+  .arrow-label {
+    font-size: 9px;
+    color: #94a3b8;
+    background: #1e293b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #334155;
+    white-space: nowrap;
+  }
+  .arrow-head { font-size: 12px; color: #64748b; }
+
+  /* ── SIDE SERVICES ─────────────────────────────────────────── */
+  .side-services {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+  }
+  .side-svc {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 11px;
+  }
+  .side-svc .icon { font-size: 18px; }
+  .side-svc-text { flex: 1; }
+  .side-svc-name { font-weight: 600; color: #e2e8f0; font-size: 11px; }
+  .side-svc-desc { font-size: 9px; color: #64748b; margin-top: 1px; }
+  .connector {
+    font-size: 9px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 4px;
+  }
+  .connector-line {
+    flex: 1;
+    height: 1px;
+    background: repeating-linear-gradient(to right, #334155 0, #334155 4px, transparent 4px, transparent 8px);
+  }
+
+  /* ── S3 TIER ───────────────────────────────────────────────── */
+  .s3-tier {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+  }
+  .s3-box {
+    flex: 1;
+    background: #111827;
+    border: 2px solid #92400e;
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .s3-icon { font-size: 36px; }
+  .s3-info h3 { font-size: 13px; font-weight: 700; color: #fbbf24; }
+  .s3-info p  { font-size: 10px; color: #78716c; margin-top: 2px; }
+  .s3-badge {
+    font-size: 9px;
+    background: #78350f;
+    color: #fcd34d;
+    padding: 3px 8px;
+    border-radius: 99px;
+    margin-top: 5px;
+    display: inline-block;
+    font-weight: 600;
+  }
+  .crr-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 0 12px;
+    min-width: 100px;
+  }
+  .crr-line {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, #92400e, #fbbf24, #92400e);
+    border-radius: 1px;
+    position: relative;
+  }
+  .crr-line::after {
+    content: '▶';
+    position: absolute;
+    right: -4px;
+    top: -7px;
+    font-size: 10px;
+    color: #fbbf24;
+  }
+  .crr-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: #fbbf24;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .user-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+  }
+  .user-icon { font-size: 32px; }
+  .user-label { font-size: 10px; color: #94a3b8; text-align: center; }
+
+  /* ── VERTICAL CONNECTOR ─────────────────────────────────────── */
+  .v-connector {
+    display: flex;
+    justify-content: center;
+    padding: 4px 0;
+  }
+  .v-line {
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(to bottom, #334155, #475569);
+  }
+
+  /* ── MAIN LAYOUT ────────────────────────────────────────────── */
+  .diagram-wrap {
+    max-width: 1380px;
+    margin: 0 auto;
+  }
+
+  /* ── TWO-REGION LAYOUT ──────────────────────────────────────── */
+  .two-regions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .region-full {
+    border-radius: 14px;
+    padding: 16px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .region-full.primary   { background: #0c1428; border: 2px solid #1e40af; }
+  .region-full.secondary { background: #071a12; border: 2px solid #065f46; }
+
+  /* ── OUTER SERVICES (side panel) ────────────────────────────── */
+  .region-inner {
+    display: flex;
+    gap: 10px;
+  }
+  .region-vpc {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .region-outer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 130px;
+  }
+
+  /* ── LEGEND ─────────────────────────────────────────────────── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 24px;
+    padding: 16px;
+    background: #111827;
+    border-radius: 12px;
+    border: 1px solid #1e293b;
+    max-width: 1380px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 20px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    border: 2px solid;
+  }
+  .legend-line {
+    width: 28px; height: 2px;
+    border-radius: 1px;
+  }
+
+  /* ── FLOW ARROWS inside regions ─────────────────────────────── */
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    color: #475569;
+    padding: 2px 4px;
+  }
+  .fa-line { flex: 1; height: 1px; background: #334155; max-width: 24px; }
+  .fa-head { color: #475569; }
+
+  /* ── STATS BAR ──────────────────────────────────────────────── */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .stat-num { font-size: 22px; font-weight: 800; color: #FF9900; }
+  .stat-lbl { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+</style>
+</head>
+<body>
+
+<h1>2-Region · 3-Tier AWS Infrastructure</h1>
+<p class="subtitle">Terraform Portfolio Project &nbsp;·&nbsp; us-east-1 (Primary) + us-west-2 (Secondary)</p>
+
+<div class="stats">
+  <div class="stat"><span class="stat-num">2</span><span class="stat-lbl">AWS Regions</span></div>
+  <div class="stat"><span class="stat-num">3</span><span class="stat-lbl">Tiers</span></div>
+  <div class="stat"><span class="stat-num">10</span><span class="stat-lbl">Modules</span></div>
+  <div class="stat"><span class="stat-num">~80</span><span class="stat-lbl">Resources</span></div>
+  <div class="stat"><span class="stat-num">2</span><span class="stat-lbl">RDS Instances</span></div>
+  <div class="stat"><span class="stat-num">2</span><span class="stat-lbl">ECS Clusters</span></div>
+</div>
+
+<div class="diagram-wrap">
+
+  <!-- ══ TIER 1: S3 FRONTEND ══════════════════════════════════════════════ -->
+  <div style="background:#0d1520;border:2px solid #1e3a5f;border-radius:14px;padding:14px 18px;margin-bottom:14px;">
+    <div style="font-size:11px;font-weight:700;color:#38bdf8;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">
+      🌐 Tier 1 — Frontend (S3 Static Web Hosting)
+    </div>
+    <div style="display:flex;align-items:center;gap:0;">
+
+      <!-- User -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 16px 0 0;">
+        <div style="font-size:38px;">👤</div>
+        <div style="font-size:10px;color:#94a3b8;text-align:center;line-height:1.4;">Browser<br>/ User</div>
+      </div>
+
+      <!-- Arrow to S3 primary -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:60px;">
+        <div style="width:100%;height:2px;background:linear-gradient(to right,#1e3a5f,#38bdf8);border-radius:1px;position:relative;">
+          <span style="position:absolute;right:-5px;top:-8px;font-size:11px;color:#38bdf8;">▶</span>
+        </div>
+        <span style="font-size:9px;color:#475569;">HTTP</span>
+      </div>
+
+      <!-- S3 Primary -->
+      <div style="flex:1;background:#111827;border:2px solid #92400e;border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:34px;">🪣</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#fbbf24;">S3 — Source Bucket</div>
+          <div style="font-size:10px;color:#78716c;margin-top:2px;">us-east-1 · Static Website Hosting</div>
+          <div style="font-size:9px;background:#78350f;color:#fcd34d;padding:2px 8px;border-radius:99px;margin-top:5px;display:inline-block;font-weight:600;">index.html · error.html</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div style="font-size:9px;color:#92400e;background:#1c1108;border:1px solid #92400e;padding:3px 8px;border-radius:6px;">Versioning ✓</div>
+          <div style="font-size:9px;color:#92400e;background:#1c1108;border:1px solid #92400e;padding:3px 8px;border-radius:6px;margin-top:4px;">Public Policy ✓</div>
+        </div>
+      </div>
+
+      <!-- CRR Arrow -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 14px;min-width:110px;">
+        <div style="width:100%;height:2px;background:linear-gradient(to right,#fbbf24,#f59e0b,#fbbf24);border-radius:1px;position:relative;">
+          <span style="position:absolute;right:-5px;top:-8px;font-size:11px;color:#fbbf24;">▶</span>
+        </div>
+        <span style="font-size:9px;font-weight:600;color:#fbbf24;white-space:nowrap;">⟳ CRR Auto-Sync</span>
+        <span style="font-size:8px;color:#78716c;">IAM Replication Role</span>
+      </div>
+
+      <!-- S3 Replica -->
+      <div style="flex:1;background:#111827;border:2px solid #065f46;border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:34px;">🪣</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#34d399;">S3 — Replica Bucket</div>
+          <div style="font-size:10px;color:#065f46;margin-top:2px;">us-west-2 · Static Website Hosting</div>
+          <div style="font-size:9px;background:#064e3b;color:#6ee7b7;padding:2px 8px;border-radius:99px;margin-top:5px;display:inline-block;font-weight:600;">Auto-replicated</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div style="font-size:9px;color:#065f46;background:#041a12;border:1px solid #065f46;padding:3px 8px;border-radius:6px;">Versioning ✓</div>
+          <div style="font-size:9px;color:#065f46;background:#041a12;border:1px solid #065f46;padding:3px 8px;border-radius:6px;margin-top:4px;">Public Policy ✓</div>
+        </div>
+      </div>
+
+      <!-- Arrow to user (west) -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:60px;">
+        <div style="width:100%;height:2px;background:linear-gradient(to right,#34d399,#065f46);border-radius:1px;position:relative;">
+          <span style="position:absolute;left:-5px;top:-8px;font-size:11px;color:#34d399;transform:scaleX(-1);display:inline-block;">▶</span>
+        </div>
+        <span style="font-size:9px;color:#475569;">HTTP</span>
+      </div>
+
+      <!-- User 2 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 0 0 16px;">
+        <div style="font-size:38px;">👤</div>
+        <div style="font-size:10px;color:#94a3b8;text-align:center;line-height:1.4;">Browser<br>/ User</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Vertical connector T1→T2 -->
+  <div style="display:flex;justify-content:center;margin:-4px 0;gap:200px;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+      <div style="width:2px;height:14px;background:#1e3a8a;"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+      <div style="width:2px;height:14px;background:#065f46;"></div>
+    </div>
+  </div>
+
+  <!-- ══ TIER 2 + TIER 3: TWO REGIONS SIDE BY SIDE ═══════════════════════ -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+
+    <!-- ── PRIMARY REGION ── -->
+    <div style="background:#0c1428;border:2px solid #1e40af;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:13px;font-weight:700;color:#60a5fa;">🌍 us-east-1 &nbsp;<span style="font-size:10px;background:#1e3a8a;color:#93c5fd;padding:2px 8px;border-radius:99px;">PRIMARY</span></div>
+        <div style="font-size:10px;color:#1e40af;">VPC: 10.0.0.0/16</div>
+      </div>
+
+      <!-- PUBLIC SUBNET -->
+      <div style="background:rgba(20,83,45,0.2);border:1.5px dashed #22c55e;border-radius:10px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">🟢 Public Subnets — 10.0.1.0/24 · 10.0.2.0/24</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+
+          <!-- IGW -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px;min-width:70px;">
+            <span style="font-size:22px;">🌐</span>
+            <span style="font-size:10px;font-weight:600;color:#cbd5e1;">IGW</span>
+            <span style="font-size:9px;color:#475569;">Internet<br>Gateway</span>
+          </div>
+
+          <!-- ALB -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#1e293b;border:1px solid #FF9900;border-radius:10px;padding:10px 12px;min-width:70px;">
+            <span style="font-size:22px;">⚖️</span>
+            <span style="font-size:10px;font-weight:600;color:#fbbf24;">ALB</span>
+            <span style="font-size:9px;color:#475569;">App Load<br>Balancer</span>
+          </div>
+
+          <!-- Arrow -->
+          <div style="display:flex;align-items:center;color:#475569;font-size:11px;">→ :80</div>
+
+          <!-- NAT -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px;min-width:70px;">
+            <span style="font-size:22px;">🔀</span>
+            <span style="font-size:10px;font-weight:600;color:#cbd5e1;">NAT GW</span>
+            <span style="font-size:9px;color:#475569;">Elastic<br>IP</span>
+          </div>
+
+          <!-- SG badge -->
+          <div style="margin-left:auto;display:flex;align-items:center;">
+            <div style="font-size:9px;background:#171f2e;border:1px solid #3b82f6;color:#60a5fa;padding:4px 8px;border-radius:6px;text-align:center;">🔒 SG: :80<br>from 0.0.0.0/0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Down arrow from ALB -->
+      <div style="display:flex;align-items:center;gap:6px;padding:0 16px;">
+        <div style="flex:1;height:1px;background:#334155;"></div>
+        <div style="font-size:9px;color:#3b82f6;background:#1e293b;border:1px solid #334155;padding:2px 8px;border-radius:4px;">:5000 (Flask)</div>
+        <div style="color:#475569;font-size:14px;">↓</div>
+        <div style="flex:1;height:1px;background:#334155;"></div>
+      </div>
+
+      <!-- PRIVATE ECS SUBNET -->
+      <div style="background:rgba(30,58,138,0.2);border:1.5px dashed #3b82f6;border-radius:10px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">🔵 Private ECS Subnets — 10.0.10.0/24 · 10.0.11.0/24</div>
+        <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;">
+
+          <!-- ECS Fargate -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#1e293b;border:1px solid #FF9900;border-radius:10px;padding:10px 14px;">
+            <span style="font-size:24px;">🐳</span>
+            <span style="font-size:10px;font-weight:700;color:#fbbf24;">ECS Fargate</span>
+            <span style="font-size:9px;color:#64748b;text-align:center;">Flask Python App<br>256 CPU · 512MB</span>
+            <div style="font-size:8px;background:#1c1108;border:1px solid #92400e;color:#fbbf24;padding:2px 6px;border-radius:4px;margin-top:2px;">desired_count: 1</div>
+          </div>
+
+          <!-- SG + connections -->
+          <div style="display:flex;flex-direction:column;gap:5px;flex:1;">
+            <div style="font-size:9px;background:#171f2e;border:1px solid #3b82f6;color:#60a5fa;padding:5px 8px;border-radius:6px;">🔒 SG: :5000 from ALB SG<br>Egress: all (via NAT)</div>
+            <div style="font-size:9px;color:#475569;display:flex;align-items:center;gap:4px;">
+              <span>↑</span> NAT Gateway (outbound internet)
+            </div>
+          </div>
+        </div>
+
+        <!-- Side services row -->
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:5px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 10px;">
+            <span style="font-size:16px;">📦</span>
+            <div><div style="font-size:10px;font-weight:600;color:#e2e8f0;">ECR</div><div style="font-size:8px;color:#475569;">Docker pull</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 10px;">
+            <span style="font-size:16px;">🔐</span>
+            <div><div style="font-size:10px;font-weight:600;color:#e2e8f0;">Secrets Mgr</div><div style="font-size:8px;color:#475569;">DB_PASSWORD</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 10px;">
+            <span style="font-size:16px;">📊</span>
+            <div><div style="font-size:10px;font-weight:600;color:#e2e8f0;">CloudWatch</div><div style="font-size:8px;color:#475569;">Logs · CPU Alarm</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;background:#1e293b;border:1px solid #e53e3e;border-radius:8px;padding:6px 10px;">
+            <span style="font-size:16px;">🔔</span>
+            <div><div style="font-size:10px;font-weight:600;color:#fc8181;">SNS Topic</div><div style="font-size:8px;color:#475569;">CPU&gt;80% → 📧</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Down arrow ECS → RDS -->
+      <div style="display:flex;align-items:center;gap:6px;padding:0 16px;">
+        <div style="flex:1;height:1px;background:#334155;"></div>
+        <div style="font-size:9px;color:#f97316;background:#1e293b;border:1px solid #334155;padding:2px 8px;border-radius:4px;">PostgreSQL :5432</div>
+        <div style="color:#475569;font-size:14px;">↓</div>
+        <div style="flex:1;height:1px;background:#334155;"></div>
+      </div>
+
+      <!-- PRIVATE RDS SUBNET -->
+      <div style="background:rgba(120,53,15,0.2);border:1.5px dashed #f97316;border-radius:10px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#fb923c;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">🟠 Private RDS Subnets — 10.0.20.0/24 · 10.0.21.0/24</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#1e293b;border:1px solid #f97316;border-radius:10px;padding:10px 14px;">
+            <span style="font-size:24px;">🐘</span>
+            <span style="font-size:10px;font-weight:700;color:#fb923c;">RDS PostgreSQL</span>
+            <span style="font-size:9px;color:#64748b;text-align:center;">PostgreSQL 15.4<br>db.t3.micro · 20GB</span>
+            <div style="font-size:8px;background:#1c0d08;border:1px solid #c2410c;color:#fb923c;padding:2px 6px;border-radius:4px;margin-top:2px;">Single-AZ · Encrypted</div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:9px;background:#171f2e;border:1px solid #f97316;color:#fb923c;padding:5px 8px;border-radius:6px;">🔒 SG: :5432 from ECS subnets only<br>No public access · skip_final_snapshot</div>
+            <div style="font-size:9px;color:#64748b;margin-top:6px;">🔑 Password → Secrets Manager</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- END PRIMARY REGION -->
+
+    <!-- ── SECONDARY REGION ── -->
+    <div style="background:#071a12;border:2px solid #065f46;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:13px;font-weight:700;color:#34d399;">🌏 us-west-2 &nbsp;<span style="font-size:10px;background:#064e3b;color:#6ee7b7;padding:2px 8px;border-radius:99px;">SECONDARY</span></div>
+        <div style="font-size:10px;color:#065f46;">VPC: 10.1.0.0/16</div>
+      </div>
+
+      <!-- PUBLIC SUBNET -->
+      <div style="background:rgba(20,83,45,0.2);border:1.5px dashed #22c55e;border-radius:10px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">🟢 Public Subnets — 10.1.1.0/24 · 10.1.2.0/24</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px;min-width:70px;">
+            <span style="font-size:22px;">🌐</span>
+            <span style="font-size:10px;font-weight:600;color:#cbd5e1;">IGW</span>
+            <span style="font-size:9px;color:#475569;">Internet<br>Gateway</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#1e293b;border:1px solid #FF9900;border-radius:10px;padding:10px 12px;min-width:70px;">
+            <span style="font-size:22px;">⚖️</span>
+            <span style="font-size:10px;font-weight:600;color:#fbbf24;">ALB</span>
+            <span style="font-size:9px;color:#475569;">App Load<br>Balancer</span>
+          </div>
+          <div style="display:flex;align-items:center;color:#475569;font-size:11px;">→ :80</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px;min-width:70px;">
+            <span style="font-size:22px;">🔀</span>
+            <span style="font-size:10px;font-weight:600;color:#cbd5e1;">NAT GW</span>
+            <span style="font-size:9px;color:#475569;">Elastic<br>IP</span>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;">
+            <div style="font-size:9px;background:#171f2e;border:1px solid #3b82f6;color:#60a5fa;padding:4px 8px;border-radius:6px;text-align:center;">🔒 SG: :80<br>from 0.0.0.0/0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Down arrow -->
+      <div style="display:flex;align-items:center;gap:6px;padding:0 16px;">
+        <div style="flex:1;height:1px;background:#334155;"></div>
+        <div style="font-size:9px;color:#3b82f6;background:#1e293b;border:1px solid #334155;padding:2px 8px;border-radius:4px;">:5000 (Flask)</div>
+        <div style="color:#475569;font-size:14px;">↓</div>
+        <div style="flex:1;height:1px;background:#334155;"></div>
+      </div>
+
+      <!-- PRIVATE ECS SUBNET -->
+      <div style="background:rgba(30,58,138,0.2);border:1.5px dashed #3b82f6;border-radius:10px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">🔵 Private ECS Subnets — 10.1.10.0/24 · 10.1.11.0/24</div>
+        <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#1e293b;border:1px solid #FF9900;border-radius:10px;padding:10px 14px;">
+            <span style="font-size:24px;">🐳</span>
+            <span style="font-size:10px;font-weight:700;color:#fbbf24;">ECS Fargate</span>
+            <span style="font-size:9px;color:#64748b;text-align:center;">Flask Python App<br>256 CPU · 512MB</span>
+            <div style="font-size:8px;background:#1c1108;border:1px solid #92400e;color:#fbbf24;padding:2px 6px;border-radius:4px;margin-top:2px;">desired_count: 1</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;flex:1;">
+            <div style="font-size:9px;background:#171f2e;border:1px solid #3b82f6;color:#60a5fa;padding:5px 8px;border-radius:6px;">🔒 SG: :5000 from ALB SG<br>Egress: all (via NAT)</div>
+            <div style="font-size:9px;color:#475569;display:flex;align-items:center;gap:4px;"><span>↑</span> NAT Gateway (outbound internet)</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:5px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 10px;">
+            <span style="font-size:16px;">📦</span>
+            <div><div style="font-size:10px;font-weight:600;color:#e2e8f0;">ECR</div><div style="font-size:8px;color:#475569;">Docker pull</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 10px;">
+            <span style="font-size:16px;">🔐</span>
+            <div><div style="font-size:10px;font-weight:600;color:#e2e8f0;">Secrets Mgr</div><div style="font-size:8px;color:#475569;">DB_PASSWORD</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 10px;">
+            <span style="font-size:16px;">📊</span>
+            <div><div style="font-size:10px;font-weight:600;color:#e2e8f0;">CloudWatch</div><div style="font-size:8px;color:#475569;">Logs · CPU Alarm</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;background:#1e293b;border:1px solid #e53e3e;border-radius:8px;padding:6px 10px;">
+            <span style="font-size:16px;">🔔</span>
+            <div><div style="font-size:10px;font-weight:600;color:#fc8181;">SNS Topic</div><div style="font-size:8px;color:#475569;">CPU&gt;80% → 📧</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Down arrow ECS → RDS -->
+      <div style="display:flex;align-items:center;gap:6px;padding:0 16px;">
+        <div style="flex:1;height:1px;background:#334155;"></div>
+        <div style="font-size:9px;color:#f97316;background:#1e293b;border:1px solid #334155;padding:2px 8px;border-radius:4px;">PostgreSQL :5432</div>
+        <div style="color:#475569;font-size:14px;">↓</div>
+        <div style="flex:1;height:1px;background:#334155;"></div>
+      </div>
+
+      <!-- PRIVATE RDS SUBNET -->
+      <div style="background:rgba(120,53,15,0.2);border:1.5px dashed #f97316;border-radius:10px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#fb923c;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">🟠 Private RDS Subnets — 10.1.20.0/24 · 10.1.21.0/24</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#1e293b;border:1px solid #f97316;border-radius:10px;padding:10px 14px;">
+            <span style="font-size:24px;">🐘</span>
+            <span style="font-size:10px;font-weight:700;color:#fb923c;">RDS PostgreSQL</span>
+            <span style="font-size:9px;color:#64748b;text-align:center;">PostgreSQL 15.4<br>db.t3.micro · 20GB</span>
+            <div style="font-size:8px;background:#1c0d08;border:1px solid #c2410c;color:#fb923c;padding:2px 6px;border-radius:4px;margin-top:2px;">Single-AZ · Encrypted</div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:9px;background:#171f2e;border:1px solid #f97316;color:#fb923c;padding:5px 8px;border-radius:6px;">🔒 SG: :5432 from ECS subnets only<br>No public access · skip_final_snapshot</div>
+            <div style="font-size:9px;color:#64748b;margin-top:6px;">🔑 Password → Secrets Manager</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- END SECONDARY REGION -->
+  </div>
+
+  <!-- ══ SNS EMAIL NOTIFICATION BANNER ═══════════════════════════════════════ -->
+  <div style="background:#1a0a0a;border:2px solid #7f1d1d;border-radius:12px;padding:14px 20px;margin-top:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="font-size:24px;">🔔</div>
+    <div style="flex:1;">
+      <div style="font-size:12px;font-weight:700;color:#fca5a5;">CloudWatch + SNS Alarm Flow</div>
+      <div style="font-size:10px;color:#78716c;margin-top:2px;">Both regions independently monitor ECS CPU utilization</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:10px;color:#94a3b8;text-align:center;">
+        📊 CloudWatch<br><span style="color:#60a5fa;font-weight:600;">CPUUtilization</span>
+      </div>
+      <div style="font-size:14px;color:#475569;">→</div>
+      <div style="background:#1e293b;border:1px solid #7f1d1d;border-radius:8px;padding:6px 12px;font-size:10px;color:#fca5a5;text-align:center;">
+        🚨 Alarm<br><span style="font-weight:600;">CPU &gt; 80% · 2min</span>
+      </div>
+      <div style="font-size:14px;color:#475569;">→</div>
+      <div style="background:#1e293b;border:1px solid #e53e3e;border-radius:8px;padding:6px 12px;font-size:10px;color:#fc8181;text-align:center;">
+        🔔 SNS Topic<br><span style="font-weight:600;">alerts</span>
+      </div>
+      <div style="font-size:14px;color:#475569;">→</div>
+      <div style="background:#1e293b;border:1px solid #d97706;border-radius:8px;padding:6px 12px;font-size:10px;color:#fbbf24;text-align:center;">
+        📧 Email<br><span style="font-weight:600;">chogovadzebeka@gmail.com</span>
+      </div>
+    </div>
+    <div style="font-size:9px;color:#64748b;border-left:1px solid #334155;padding-left:16px;">
+      ✅ OK action also notifies<br>🔔 Subscription confirm required
+    </div>
+  </div>
+
+  <!-- ══ LEGEND ════════════════════════════════════════════════════════════ -->
+  <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:16px;padding:14px 20px;background:#111827;border-radius:12px;border:1px solid #1e293b;">
+    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;width:100%;text-align:center;margin-bottom:4px;">Legend</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;"><div style="width:14px;height:14px;border-radius:3px;background:rgba(20,83,45,0.4);border:2px dashed #22c55e;"></div> Public Subnet (ALB + NAT + IGW)</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;"><div style="width:14px;height:14px;border-radius:3px;background:rgba(30,58,138,0.4);border:2px dashed #3b82f6;"></div> Private Subnet — ECS</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;"><div style="width:14px;height:14px;border-radius:3px;background:rgba(120,53,15,0.4);border:2px dashed #f97316;"></div> Private Subnet — RDS</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;"><div style="width:12px;height:2px;background:#fbbf24;border-radius:1px;"></div> Cross-Region Replication (CRR)</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;"><div style="width:14px;height:14px;border-radius:3px;border:2px solid #FF9900;"></div> AWS Managed Service</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;">🔒 Security Group boundary</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;">🐳 ECS Fargate (serverless containers)</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;">🐘 RDS PostgreSQL (managed DB)</div>
+  </div>
+
+  <!-- ══ TERRAFORM MODULE MAP ═══════════════════════════════════════════════ -->
+  <div style="margin-top:16px;background:#111827;border:1px solid #1e293b;border-radius:12px;padding:16px;">
+    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Terraform Module Map</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:10px;color:#cbd5e1;text-align:center;">📁 <strong>modules/vpc</strong><br><span style="color:#64748b;">VPC · Subnets · IGW · Route Tables</span></div>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:10px;color:#cbd5e1;text-align:center;">📁 <strong>modules/nat_gateway</strong><br><span style="color:#64748b;">EIP · NAT GW · Private Routes</span></div>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:10px;color:#cbd5e1;text-align:center;">📁 <strong>modules/alb</strong><br><span style="color:#64748b;">ALB · Target Group · Listener</span></div>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:10px;color:#cbd5e1;text-align:center;">📁 <strong>modules/ecr</strong><br><span style="color:#64748b;">ECR Repository</span></div>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:10px;color:#cbd5e1;text-align:center;">📁 <strong>modules/ecs</strong><br><span style="color:#64748b;">Cluster · Task Def · Service · IAM</span></div>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:10px;color:#cbd5e1;text-align:center;">📁 <strong>modules/rds</strong><br><span style="color:#64748b;">PostgreSQL · Subnet Group · SG</span></div>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:10px;color:#cbd5e1;text-align:center;">📁 <strong>modules/secrets_manager</strong><br><span style="color:#64748b;">random_password · Secret JSON</span></div>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:10px;color:#cbd5e1;text-align:center;">📁 <strong>modules/sns</strong><br><span style="color:#64748b;">Topic · Email Subscription</span></div>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:10px;color:#cbd5e1;text-align:center;">📁 <strong>modules/cloudwatch</strong><br><span style="color:#64748b;">Log Group · CPU Alarm</span></div>
+      <div style="background:#1e293b;border:1px solid #fbbf24;border-radius:8px;padding:6px 12px;font-size:10px;color:#fbbf24;text-align:center;">📁 <strong>modules/s3_frontend</strong><br><span style="color:#92400e;">Dual-Provider · CRR · IAM Role</span></div>
+    </div>
+    <div style="text-align:center;margin-top:10px;font-size:10px;color:#475569;">Each module called <strong style="color:#94a3b8;">twice</strong> from root main.tf (primary + secondary) · S3 module called <strong style="color:#fbbf24;">once</strong> with dual providers</div>
+  </div>
+
+</div>
+</body>
+</html>
