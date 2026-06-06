@@ -799,5 +799,240 @@
   </div>
 
 </div>
+
+<!-- ══ GEORGIAN EXPLANATION ═══════════════════════════════════════════════════ -->
+<div style="max-width:1380px;margin:28px auto 0;font-family:'Segoe UI',system-ui,sans-serif;">
+
+  <div style="background:#111827;border:2px solid #1e293b;border-radius:16px;overflow:hidden;">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1e3a8a 0%,#065f46 100%);padding:24px 32px;">
+      <h2 style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;">📖 ინფრასტრუქტურის განმარტება</h2>
+      <p style="font-size:13px;color:rgba(255,255,255,0.7);">2-რეგიონიანი, 3-დონიანი AWS ინფრასტრუქტურა · Terraform Portfolio Project</p>
+    </div>
+
+    <div style="padding:28px 32px;display:flex;flex-direction:column;gap:28px;">
+
+      <!-- INTRO -->
+      <div>
+        <h3 style="font-size:16px;font-weight:700;color:#60a5fa;margin-bottom:10px;border-bottom:1px solid #1e293b;padding-bottom:8px;">🎯 პროექტის მიზანი</h3>
+        <p style="font-size:14px;color:#cbd5e1;line-height:1.8;">
+          ეს პროექტი არის <strong style="color:#fff;">Terraform-ის პორტფოლიო პროექტი</strong>, რომელიც ავტომატურად ქმნის სრულ, პროდაქშენ-მზა AWS ინფრასტრუქტურას.
+          Terraform-ის კოდი ერთ ბრძანებაში (<code style="background:#1e293b;padding:1px 6px;border-radius:4px;color:#fbbf24;">terraform apply</code>) ქმნის დაახლოებით
+          <strong style="color:#FF9900;">80 AWS რესურს</strong> ორ სხვადასხვა გეოგრაფიულ რეგიონში — <strong style="color:#60a5fa;">us-east-1 (ვირჯინია)</strong> და
+          <strong style="color:#34d399;">us-west-2 (ორეგონი)</strong>.
+          ინფრასტრუქტურა დაყოფილია 3 ძირითად დონედ (Tier): Frontend, Backend და Database.
+        </p>
+      </div>
+
+      <!-- TIER 1 -->
+      <div>
+        <h3 style="font-size:16px;font-weight:700;color:#38bdf8;margin-bottom:12px;border-bottom:1px solid #1e293b;padding-bottom:8px;">🌐 Tier 1 — Frontend (S3 სტატიური ვებ-ჰოსტინგი)</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div style="background:#0c1a2e;border:1px solid #1e3a8a;border-radius:10px;padding:16px;">
+            <div style="font-size:12px;font-weight:700;color:#60a5fa;margin-bottom:8px;">🪣 რა არის S3?</div>
+            <p style="font-size:13px;color:#94a3b8;line-height:1.7;">
+              Amazon S3 (Simple Storage Service) არის AWS-ის ობიექტური საცავი. ჩვენ ვიყენებთ მას სტატიური ვებ-გვერდის (HTML, CSS, JS) სასტუმროდ.
+              მომხმარებელი ბრაუზერიდან პირდაპირ სთხოვს S3-ს ფაილებს — არ გვჭირდება ვებ-სერვერი.
+            </p>
+          </div>
+          <div style="background:#0c1a2e;border:1px solid #1e3a8a;border-radius:10px;padding:16px;">
+            <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:8px;">⟳ Cross-Region Replication (CRR)</div>
+            <p style="font-size:13px;color:#94a3b8;line-height:1.7;">
+              us-east-1-ში ატვირთული ყველა ფაილი <strong style="color:#fbbf24;">ავტომატურად</strong> კოპირდება us-west-2-ში.
+              ეს უზრუნველყოფს მაღალ ხელმისაწვდომობას (High Availability) — თუ ერთი რეგიონი გაითიშება, მეორე კვლავ მუშაობს.
+              CRR-ისთვის საჭიროა Versioning ჩართვა ორივე bucket-ში და IAM Replication Role.
+            </p>
+          </div>
+        </div>
+        <div style="background:#0a1a0a;border:1px solid #166534;border-radius:8px;padding:12px;margin-top:10px;">
+          <span style="font-size:12px;color:#4ade80;font-weight:600;">💡 Terraform-ში: </span>
+          <span style="font-size:12px;color:#86efac;">S3 module ერთხელ იძახება ორი provider-ით (aws.primary + aws.secondary) — ეს არის Terraform-ის advanced pattern dual-provider module-ისთვის.</span>
+        </div>
+      </div>
+
+      <!-- TIER 2 -->
+      <div>
+        <h3 style="font-size:16px;font-weight:700;color:#a78bfa;margin-bottom:12px;border-bottom:1px solid #1e293b;padding-bottom:8px;">⚙️ Tier 2 — Backend (ECS Fargate + ALB)</h3>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;">
+
+          <div style="background:#0d0d1f;border:1px solid #3730a3;border-radius:10px;padding:14px;">
+            <div style="font-size:12px;font-weight:700;color:#a78bfa;margin-bottom:6px;">🌐 VPC — ვირტუალური ქსელი</div>
+            <p style="font-size:12px;color:#94a3b8;line-height:1.7;">
+              Virtual Private Cloud — ეს არის ჩვენი <strong style="color:#e2e8f0;">კერძო ქსელი</strong> AWS-ში.
+              us-east-1-ში: <code style="background:#1e293b;padding:0 4px;border-radius:3px;">10.0.0.0/16</code>,
+              us-west-2-ში: <code style="background:#1e293b;padding:0 4px;border-radius:3px;">10.1.0.0/16</code>.
+              ინტერნეტიდან პირდაპირ VPC-ში შესვლა შეუძლებელია — ყველა ტრაფიკი კონტროლდება.
+            </p>
+          </div>
+
+          <div style="background:#0d0d1f;border:1px solid #3730a3;border-radius:10px;padding:14px;">
+            <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:6px;">⚖️ ALB — Load Balancer</div>
+            <p style="font-size:12px;color:#94a3b8;line-height:1.7;">
+              Application Load Balancer — <strong style="color:#e2e8f0;">Public Subnet-ში ზის</strong> და ინტერნეტიდან მოსულ HTTP :80 მოთხოვნებს გადაამისამართებს
+              Private Subnet-ში მყოფ ECS კონტეინერებზე (:5000). ეს არის ინფრასტრუქტურის "კარი".
+            </p>
+          </div>
+
+          <div style="background:#0d0d1f;border:1px solid #3730a3;border-radius:10px;padding:14px;">
+            <div style="font-size:12px;font-weight:700;color:#34d399;margin-bottom:6px;">🔀 NAT Gateway</div>
+            <p style="font-size:12px;color:#94a3b8;line-height:1.7;">
+              Private Subnet-ში მყოფ ECS კონტეინერებს <strong style="color:#e2e8f0;">ინტერნეტი სჭირდებათ</strong> (Docker image-ის გადმოსაწერად, Secrets Manager-ზე წვდომისთვის).
+              NAT Gateway ამ outbound ტრაფიკს ამუშავებს, მაგრამ inbound-ს ბლოკავს.
+            </p>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="background:#0d0d1f;border:1px solid #FF9900;border-radius:10px;padding:14px;">
+            <div style="font-size:12px;font-weight:700;color:#FF9900;margin-bottom:6px;">🐳 ECS Fargate — Serverless კონტეინერები</div>
+            <p style="font-size:12px;color:#94a3b8;line-height:1.7;">
+              Elastic Container Service (ECS) Fargate-ით ნიშნავს, რომ <strong style="color:#e2e8f0;">სერვერები არ გვჭირდება</strong> — AWS თავად მართავს infrastructure-ს.
+              ჩვენ მხოლოდ Docker image-ს ვაწვდით (ECR-ში) და ვეუბნებით: 256 CPU unit, 512MB RAM, desired_count=1.
+              Flask Python-ის აპლიკაცია მუშაობს port 5000-ზე.
+            </p>
+          </div>
+          <div style="background:#0d0d1f;border:1px solid #3730a3;border-radius:10px;padding:14px;">
+            <div style="font-size:12px;font-weight:700;color:#c084fc;margin-bottom:6px;">🔐 Secrets Manager + ECR</div>
+            <p style="font-size:12px;color:#94a3b8;line-height:1.7;">
+              <strong style="color:#e2e8f0;">ECR</strong> (Elastic Container Registry) — AWS-ის Docker registry, სადაც ვინახავთ ჩვენს image-ებს.<br/>
+              <strong style="color:#e2e8f0;">Secrets Manager</strong> — DB_PASSWORD-ს ინახავს დაშიფრულად. ECS task-ი runtime-ზე თავად კითხულობს პაროლს — კოდში ან terraform.tfvars-ში არ ჩანს.
+            </p>
+          </div>
+        </div>
+
+        <div style="background:#0a1a0a;border:1px solid #166534;border-radius:8px;padding:12px;margin-top:10px;">
+          <span style="font-size:12px;color:#4ade80;font-weight:600;">💡 Security Groups: </span>
+          <span style="font-size:12px;color:#86efac;">ALB-ს SG-ი იღებს :80 ნებისმიერი IP-დან. ECS-ს SG-ი იღებს :5000 მხოლოდ ALB-ს SG-იდან. RDS-ს SG-ი იღებს :5432 მხოლოდ ECS-ს Private Subnet CIDR-იდან. ეს არის Defense-in-Depth პრინციპი.</span>
+        </div>
+      </div>
+
+      <!-- TIER 3 -->
+      <div>
+        <h3 style="font-size:16px;font-weight:700;color:#fb923c;margin-bottom:12px;border-bottom:1px solid #1e293b;padding-bottom:8px;">🗄️ Tier 3 — Database (RDS PostgreSQL)</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div style="background:#1c0d08;border:1px solid #9a3412;border-radius:10px;padding:16px;">
+            <div style="font-size:12px;font-weight:700;color:#fb923c;margin-bottom:8px;">🐘 რა არის RDS?</div>
+            <p style="font-size:13px;color:#94a3b8;line-height:1.7;">
+              Relational Database Service — AWS-ის <strong style="color:#e2e8f0;">მართული მონაცემთა ბაზა</strong>.
+              ჩვენ ვიყენებთ PostgreSQL 15.4 db.t3.micro instance-ზე (20GB gp2 დისკი).
+              "მართული" ნიშნავს: backup, patching, failover — ყველაფერს AWS ანხორციელებს.
+              ბაზა მხოლოდ Private Subnet-შია — ინტერნეტიდან პირდაპირი წვდომა შეუძლებელია.
+            </p>
+          </div>
+          <div style="background:#1c0d08;border:1px solid #9a3412;border-radius:10px;padding:16px;">
+            <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:8px;">🔑 პაროლის მართვა</div>
+            <p style="font-size:13px;color:#94a3b8;line-height:1.7;">
+              <code style="background:#1e293b;padding:0 4px;border-radius:3px;">random_password</code> Terraform resource ქმნის 16-სიმბოლოიან random პაროლს.
+              ეს პაროლი ინახება Secrets Manager-ში JSON ფორმატში: <code style="background:#1e293b;padding:0 4px;border-radius:3px;">{"username":"appuser","password":"..."}</code>.
+              ECS task definition-ში <code style="background:#1e293b;padding:0 4px;border-radius:3px;">secrets</code> block კითხულობს DB_PASSWORD-ს runtime-ზე.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MONITORING -->
+      <div>
+        <h3 style="font-size:16px;font-weight:700;color:#f87171;margin-bottom:12px;border-bottom:1px solid #1e293b;padding-bottom:8px;">📊 მონიტორინგი: CloudWatch + SNS</h3>
+        <div style="background:#1a0a0a;border:1px solid #7f1d1d;border-radius:10px;padding:16px;">
+          <p style="font-size:13px;color:#cbd5e1;line-height:1.8;">
+            <strong style="color:#fca5a5;">CloudWatch</strong> — AWS-ის monitoring სისტემა. ჩვენ ვქმნით:
+            <br/>• <strong style="color:#e2e8f0;">Log Group</strong> — ECS კონტეინერის ყველა log-ი (<code style="background:#1e293b;padding:0 4px;border-radius:3px;">print()</code>, error-ები) ინახება CloudWatch-ში
+            <br/>• <strong style="color:#e2e8f0;">CPU Alarm</strong> — თუ ECS-ის CPU 80%-ს გადააჭარბა 2 წუთით, alarm ამოქმედდება
+            <br/><br/>
+            <strong style="color:#fca5a5;">SNS</strong> (Simple Notification Service) — alarm-ი SNS Topic-ს აგზავნის შეტყობინებას,
+            SNS-ი კი email-ს უგზავნის <strong style="color:#fbbf24;">chogovadzebeka@gmail.com</strong>-ს.
+            <br/><br/>
+            <span style="font-size:12px;color:#ef4444;">⚠️ მნიშვნელოვანია: terraform apply-ის შემდეგ Gmail-ში მოვა confirmation email — უნდა დაადასტუროთ subscription, წინააღმდეგ შემთხვევაში alarm-ები არ მოვა.</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- TERRAFORM STRUCTURE -->
+      <div>
+        <h3 style="font-size:16px;font-weight:700;color:#94a3b8;margin-bottom:12px;border-bottom:1px solid #1e293b;padding-bottom:8px;">📁 Terraform კოდის სტრუქტურა</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <p style="font-size:13px;color:#94a3b8;line-height:1.8;margin-bottom:10px;">
+              კოდი დაყოფილია <strong style="color:#e2e8f0;">reusable modules</strong>-ად. თითოეული module ერთი პასუხისმგებლობის პრინციპს (Single Responsibility) იცავს.
+              Root <code style="background:#1e293b;padding:0 4px;border-radius:3px;">main.tf</code> იძახებს თითოეულ module-ს <strong style="color:#e2e8f0;">ორჯერ</strong> — primary და secondary region-ისთვის.
+            </p>
+            <div style="font-size:12px;color:#64748b;line-height:2;background:#0f172a;border-radius:8px;padding:12px;font-family:monospace;">
+              <span style="color:#475569;">module</span> <span style="color:#60a5fa;">"vpc_primary"</span> {<br/>
+              &nbsp;&nbsp;<span style="color:#475569;">source</span> = <span style="color:#4ade80;">"./modules/vpc"</span><br/>
+              &nbsp;&nbsp;<span style="color:#475569;">providers</span> = { aws = <span style="color:#fbbf24;">aws.primary</span> }<br/>
+              }<br/><br/>
+              <span style="color:#475569;">module</span> <span style="color:#34d399;">"vpc_secondary"</span> {<br/>
+              &nbsp;&nbsp;<span style="color:#475569;">source</span> = <span style="color:#4ade80;">"./modules/vpc"</span><br/>
+              &nbsp;&nbsp;<span style="color:#475569;">providers</span> = { aws = <span style="color:#fbbf24;">aws.secondary</span> }<br/>
+              }
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="background:#0f172a;border-radius:8px;padding:12px;">
+              <div style="font-size:11px;font-weight:700;color:#60a5fa;margin-bottom:6px;">Apply-ის თანმიმდევრობა (Dependency Graph)</div>
+              <div style="font-size:11px;color:#64748b;line-height:2;font-family:monospace;">
+                VPC → NAT Gateway → ALB<br/>
+                VPC → Secrets → RDS<br/>
+                RDS + NAT + CloudWatch → ECS<br/>
+                SNS → CloudWatch Alarm<br/>
+                S3 (დამოუკიდებელი)
+              </div>
+            </div>
+            <div style="background:#0a1a0a;border:1px solid #166534;border-radius:8px;padding:12px;">
+              <div style="font-size:11px;font-weight:700;color:#4ade80;margin-bottom:6px;">💡 Circular Dependency Fix</div>
+              <p style="font-size:11px;color:#86efac;line-height:1.6;">
+                CloudWatch Alarm-ს ECS cluster/service სახელი სჭირდება, ECS-ს კი CloudWatch log group. ეს წრიული დამოკიდებულება გადაჭრილია <code style="background:#1e293b;padding:0 2px;border-radius:3px;">locals</code> block-ით root main.tf-ში — სახელები წინასწარ გამოითვლება.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- APPLY STEPS -->
+      <div>
+        <h3 style="font-size:16px;font-weight:700;color:#fbbf24;margin-bottom:12px;border-bottom:1px solid #1e293b;padding-bottom:8px;">🚀 Deploy-ის ნაბიჯები</h3>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+          <div style="background:#1c1108;border:1px solid #92400e;border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:24px;margin-bottom:6px;">1️⃣</div>
+            <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:4px;">terraform init</div>
+            <div style="font-size:10px;color:#78716c;">Provider-ების გადმოტვირთვა (~700MB), module-ების ინიციალიზაცია</div>
+          </div>
+          <div style="background:#1c1108;border:1px solid #92400e;border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:24px;margin-bottom:6px;">2️⃣</div>
+            <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:4px;">terraform plan</div>
+            <div style="font-size:10px;color:#78716c;">~80 რესურსის preview — რა შეიქმნება, შეიცვლება, წაიშლება</div>
+          </div>
+          <div style="background:#1c1108;border:1px solid #92400e;border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:24px;margin-bottom:6px;">3️⃣</div>
+            <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:4px;">terraform apply</div>
+            <div style="font-size:10px;color:#78716c;">ინფრასტრუქტურის შექმნა ~10-15 წუთი (RDS ყველაზე დიდხანს)</div>
+          </div>
+          <div style="background:#1c1108;border:1px solid #92400e;border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:24px;margin-bottom:6px;">4️⃣</div>
+            <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:4px;">terraform destroy</div>
+            <div style="font-size:10px;color:#78716c;">ტესტის შემდეგ ყველაფრის წაშლა — ხარჯების თავიდან ასაცილებლად</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COST NOTE -->
+      <div style="background:#0f1117;border:1px solid #334155;border-radius:10px;padding:16px;display:flex;gap:14px;align-items:flex-start;">
+        <div style="font-size:28px;">💰</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">სავარაუდო ხარჯი</div>
+          <p style="font-size:12px;color:#94a3b8;line-height:1.8;">
+            ინფრასტრუქტურა ოპტიმიზებულია ტესტირებისთვის — ყველა smallest instance. 24-საათიანი გაშვება დაახლოებით
+            <strong style="color:#fbbf24;">$3-5</strong>-ს შეადგენს (ძირითადად NAT Gateway × 2 და RDS × 2).
+            ტესტის შემდეგ <code style="background:#1e293b;padding:0 4px;border-radius:3px;">terraform destroy</code> აუცილებელია.
+            Free Tier-ი NAT Gateway-ს <strong style="color:#f87171;">არ ფარავს</strong>.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
