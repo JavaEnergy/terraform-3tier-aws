@@ -76,12 +76,12 @@ module "rds_primary" {
   region_label          = "primary"
   vpc_id                = module.vpc_primary.vpc_id
   subnet_ids            = module.vpc_primary.rds_subnet_ids
-  ecs_security_group_id = module.ecs_primary.ecs_security_group_id
-  db_name               = var.db_name
-  db_username           = var.db_username
-  db_password           = module.secrets_primary.db_password
-  instance_class        = var.db_instance_class
-  multi_az              = var.multi_az
+  ecs_subnet_cidrs = var.primary_ecs_subnets
+  db_name          = var.db_name
+  db_username      = var.db_username
+  db_password      = module.secrets_primary.db_password
+  instance_class   = var.db_instance_class
+  multi_az         = var.multi_az
 }
 
 module "sns_primary" {
@@ -204,12 +204,12 @@ module "rds_secondary" {
   region_label          = "secondary"
   vpc_id                = module.vpc_secondary.vpc_id
   subnet_ids            = module.vpc_secondary.rds_subnet_ids
-  ecs_security_group_id = module.ecs_secondary.ecs_security_group_id
-  db_name               = var.db_name
-  db_username           = var.db_username
-  db_password           = module.secrets_secondary.db_password
-  instance_class        = var.db_instance_class
-  multi_az              = var.multi_az
+  ecs_subnet_cidrs = var.secondary_ecs_subnets
+  db_name          = var.db_name
+  db_username      = var.db_username
+  db_password      = module.secrets_secondary.db_password
+  instance_class   = var.db_instance_class
+  multi_az         = var.multi_az
 }
 
 module "sns_secondary" {
