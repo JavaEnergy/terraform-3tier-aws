@@ -35,3 +35,8 @@ venv/
 .idea/
 .vscode/
 *.swp
+
+
+
+terraform.tfvars
+*.auto.tfvars
